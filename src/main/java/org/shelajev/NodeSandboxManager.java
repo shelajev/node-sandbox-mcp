@@ -6,6 +6,7 @@ import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.inject.Singleton;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.Transferable;
@@ -26,8 +27,20 @@ public class NodeSandboxManager {
         GenericContainer sandboxContainer = new GenericContainer<>("mcr.microsoft.com/devcontainers/javascript-node:20")
                 .withNetworkMode("none") // disable network!!
                 .withWorkingDirectory("/workspace")
-
                 .withCommand("sleep", "infinity");
+
+        String npmCacheDir = System.getenv("NPM_CACHE_DIR");
+        if (npmCacheDir != null && !npmCacheDir.isEmpty()) {
+            sandboxContainer.withFileSystemBind(npmCacheDir, "/home/node/.nvm", BindMode.READ_ONLY);
+            sandboxContainer.withEnv("NPM_CACHE_DIR", "/home/node/.nvm");
+        }
+
+        String filesDir = System.getenv("FILES_DIR");
+        if (filesDir != null && !filesDir.isEmpty()) {
+            sandboxContainer.withFileSystemBind(filesDir, filesDir, BindMode.READ_ONLY); // map to the same so path are the same
+            sandboxContainer.withWorkingDirectory(filesDir);
+        }
+
         sandboxContainer.start();
         sandboxes.put(sandboxContainer.getContainerId(), sandboxContainer);
         latestSandbox = sandboxContainer;
