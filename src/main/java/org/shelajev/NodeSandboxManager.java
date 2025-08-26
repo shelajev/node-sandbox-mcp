@@ -24,7 +24,7 @@ public class NodeSandboxManager {
     ToolResponse initSandbox() {
 
         GenericContainer sandboxContainer = new GenericContainer<>("mcr.microsoft.com/devcontainers/javascript-node:20")
-                .withFileSystemBind(".", "/workspace") // TODO make path configurable
+//                .withFileSystemBind(".", "/workspace") // TODO make path configurable
                 .withNetworkMode("none") // disable network!!
                 .withWorkingDirectory("/workspace")
 
