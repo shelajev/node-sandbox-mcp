@@ -24,7 +24,6 @@ public class NodeSandboxManager {
     ToolResponse initSandbox() {
 
         GenericContainer sandboxContainer = new GenericContainer<>("mcr.microsoft.com/devcontainers/javascript-node:20")
-//                .withFileSystemBind(".", "/workspace") // TODO make path configurable
                 .withNetworkMode("none") // disable network!!
                 .withWorkingDirectory("/workspace")
 
@@ -37,7 +36,6 @@ public class NodeSandboxManager {
 
     @Tool(description = "execute a command in the sandbox")
     ToolResponse exec(@ToolArg(description = "CLI command to execute") String[] command,
-                      @ToolArg(description = "directory where to execute", required = false) String dir,
                       @ToolArg(description = "container id to execute in", required = false) String containerId) throws IOException, InterruptedException {
         GenericContainer sandbox = latestSandbox;
         if (containerId != null && !containerId.isEmpty()) {
@@ -47,13 +45,7 @@ public class NodeSandboxManager {
         if (null == sandbox) {
             return ToolResponse.success(new TextContent("You need to initialize a sandbox first"));
         }
-        String[] finalCommand;
-        if (dir != null && !dir.isEmpty()) {
-            finalCommand = new String[]{"/bin/sh", "-c", "cd " + dir + " && " + String.join(" ", command)};
-        } else {
-            finalCommand = command;
-        }
-        Container.ExecResult execResult = sandbox.execInContainer(finalCommand);
+        Container.ExecResult execResult = sandbox.execInContainer(command);
 
         String stdout = execResult.getStdout();
         String stderr = execResult.getStderr();
