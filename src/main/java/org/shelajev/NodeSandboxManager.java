@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 
 @Singleton
 public class NodeSandboxManager {
@@ -49,7 +51,8 @@ public class NodeSandboxManager {
 
     @Tool(description = "execute a command in the sandbox")
     ToolResponse exec(@ToolArg(description = "CLI command to execute") String[] command,
-                      @ToolArg(description = "container id to execute in", required = false) String containerId) throws IOException, InterruptedException {
+                      @ToolArg(description = "container id to execute in", required = false) String containerId,
+                      @ToolArg(description = "run command in background", required = false) Boolean background) throws IOException, InterruptedException {
         GenericContainer sandbox = latestSandbox;
         if (containerId != null && !containerId.isEmpty()) {
             sandbox = sandboxes.get(containerId);
@@ -58,14 +61,28 @@ public class NodeSandboxManager {
         if (null == sandbox) {
             return ToolResponse.success(new TextContent("You need to initialize a sandbox first"));
         }
-        Container.ExecResult execResult = sandbox.execInContainer(command);
 
-        String stdout = execResult.getStdout();
-        String stderr = execResult.getStderr();
+        final GenericContainer finalSandbox = sandbox;
 
-        String result = "stdout: " + stdout + "\n\n";
-        result += "stderr: " + stderr;
-        return ToolResponse.success(new TextContent(result));
+        if (background != null && background) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    finalSandbox.execInContainer(command);
+                } catch (IOException | InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }, ForkJoinPool.commonPool());
+            return ToolResponse.success(new TextContent("Command started in background: " + String.join(" ", command)));
+        } else {
+            Container.ExecResult execResult = finalSandbox.execInContainer(command);
+
+            String stdout = execResult.getStdout();
+            String stderr = execResult.getStderr();
+
+            String result = "stdout: " + stdout + "\n\n";
+            result += "stderr: " + stderr;
+            return ToolResponse.success(new TextContent(result));
+        }
     }
 
     @Tool(description = "write a file in the sandbox")
