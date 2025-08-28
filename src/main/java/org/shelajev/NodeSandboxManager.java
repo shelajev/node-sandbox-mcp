@@ -33,8 +33,8 @@ public class NodeSandboxManager {
 
         String npmCacheDir = System.getenv("NPM_CACHE_DIR");
         if (npmCacheDir != null && !npmCacheDir.isEmpty()) {
-            sandboxContainer.withFileSystemBind(npmCacheDir, "/home/node/.nvm", BindMode.READ_ONLY);
-            sandboxContainer.withEnv("NPM_CACHE_DIR", "/home/node/.nvm");
+            sandboxContainer.withFileSystemBind(npmCacheDir, "/usr/local/share/npm-global/lib/node_modules", BindMode.READ_ONLY);
+            sandboxContainer.withEnv("NPM_CACHE_DIR", "/usr/local/share/npm-global/lib/node_modules");
         }
 
         String filesDir = System.getenv("FILES_DIR");
